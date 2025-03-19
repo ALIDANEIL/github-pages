@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ali Intelligence</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e3f2fd;
+            color: #333;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+        #chat-container {
+            width: 95%;
+            max-width: 600px;
+            height: 90vh;
+            background: #ffffff;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+        }
+        #chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            background-color: #f9fcff;
+            scroll-behavior: smooth;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 5px 0;
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+        .user {
+            background: #b3e5fc;
+            color: #000;
+            align-self: flex-end;
+            text-align: right;
+        }
+        .bot {
+            background: #bbdefb;
+            color: #000;
+            align-self: flex-start;
+            text-align: left;
+        }
+        #input-box {
+            display: flex;
+            padding: 10px;
+            background: #ffffff;
+            border-top: 1px solid #ddd;
+        }
+        textarea {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+            font-size: 16px;
+            background: #fff;
+            color: #333;
+            resize: none;
+            overflow-y: hidden;
+            min-height: 40px;
+            max-height: 150px;
+        }
+        button {
+            padding: 12px;
+            margin-left: 10px;
+            background: #007acc;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        button:hover:enabled {
+            background: #005b9f;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+        }
+        @media (max-width: 768px) {
+            #chat-container {
+                height: 95vh;
+            }
+            textarea {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 style="margin-top: 10px; color: #007acc;">Ali Intelligence</h1>
+    <div id="chat-container">
+        <div id="chat-box"></div>
+        <div id="input-box">
+            <textarea id="user-input" placeholder="اكتب هنا..." onfocus="showKeyboard()" oninput="adjustTextarea(this); toggleSendButton();"></textarea>
+            <button id="send-button" onclick="sendMessage()" disabled>إرسال</button>
+        </div>
+        <div class="loading" id="loading">جاري التفكير...</div>
+    </div>
+
+    <script>
+        function showKeyboard() {
+            const input = document.getElementById("user-input");
+            input.focus();
+        }
+
+        function adjustTextarea(element) {
+            element.style.height = "auto";
+            element.style.height = element.scrollHeight + "px";
+        }
+
+        function toggleSendButton() {
+            let input = document.getElementById("user-input");
+            let sendButton = document.getElementById("send-button");
+            sendButton.disabled = input.value.trim() === "";
+        }
+
+        async function sendMessage() {
+            let userInput = document.getElementById("user-input");
+            let chatBox = document.getElementById("chat-box");
+            let loading = document.getElementById("loading");
+            let sendButton = document.getElementById("send-button");
+            let message = userInput.value.trim();
+            if (!message) return;
+            
+            addMessage("أنت", message, "user");
+            userInput.value = "";
+            sendButton.disabled = true;
+            loading.style.display = "block";
+
+            try {
+                let response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBrCL_5t7joz_MrxENuzv5EfKiffgMLqHo", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: message }] }]
+                    })
+                });
+                let data = await response.json();
+                let botMessage = data?.candidates?.[0]?.content?.parts?.[0]?.text || "معذرة، لم أفهم ذلك.";
+                addMessage("Ali Intelligence", botMessage, "bot");
+            } catch (error) {
+                addMessage("Ali Intelligence", "حدث خطأ، حاول مرة أخرى.", "bot");
+            }
+            
+            loading.style.display = "none";
+            sendButton.disabled = false;
+            showKeyboard();
+        }
+
+        function addMessage(name, text, sender) {
+            let chatBox = document.getElementById("chat-box");
+            let msgDiv = document.createElement("div");
+            msgDiv.className = "message " + sender;
+            msgDiv.textContent = text;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
